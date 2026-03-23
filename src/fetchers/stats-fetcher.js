@@ -486,10 +486,8 @@ const fetchStats = async (
   stats.orgStars = orgStars;
 
   // Calculate weighted total for ranking (personal: 1.0, org: 0.8)
-  const weightedStars = personalStars + (orgStars * 0.8);
-
-  // For backward compatibility and ranking, use weighted total
-  stats.totalStars = include_managed_repos ? weightedStars : personalStars;
+  const mergedStars = personalStars + orgStars;
+  stats.totalStars = include_managed_repos ? mergedStars : personalStars;
 
   stats.rank = calculateRank({
     all_commits: include_all_commits,
