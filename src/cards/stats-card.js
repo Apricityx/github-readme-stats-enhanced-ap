@@ -269,29 +269,17 @@ const renderStatsCard = (stats, options = {}) => {
   const STATS = {};
 
   // Handle separated stars display
-  if (include_managed_repos && personalStars !== undefined && orgStars !== undefined) {
-    // Show separated stars when managed repos are included
-    STATS.personalStars = {
-      icon: icons.star, // Filled star for personal repos
-      label: "Personal Stars Earned",
-      value: personalStars,
-      id: "personalStars",
-    };
-    STATS.orgStars = {
-      icon: icons.organization,
-      label: "Organization Stars Earned",
-      value: orgStars,
-      id: "orgStars",
-    };
-  } else {
-    // Show traditional total stars
-    STATS.stars = {
-      icon: icons.star,
-      label: i18n.t("statcard.totalstars"),
-      value: include_managed_repos ? totalStars : (personalStars !== undefined ? personalStars : totalStars),
-      id: "stars",
-    };
-  }
+  const mergedStars =
+  include_managed_repos && personalStars !== undefined && orgStars !== undefined
+    ? personalStars + orgStars
+    : (personalStars !== undefined ? personalStars : totalStars);
+
+  STATS.personalStars = {
+    icon: icons.star,
+    label: include_managed_repos ? "Personal Stars Earned" : i18n.t("statcard.totalstars"),
+    value: mergedStars,
+    id: "personalStars",
+  };
   STATS.commits = {
     icon: icons.commits,
     label: `${i18n.t("statcard.commits")}${
