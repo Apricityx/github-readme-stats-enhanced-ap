@@ -5,6 +5,24 @@ import { calculateRank } from "../src/calculateRank.js";
 import { fetchStats } from "../src/fetchers/stats-fetcher.js";
 import { expect, it, describe, beforeEach, afterEach } from "@jest/globals";
 
+const createRepo = (
+  name,
+  stars,
+  openIssues,
+  closedIssues,
+  owner = "anuraghazra",
+  ownerType = "User",
+) => ({
+  name,
+  owner: {
+    login: owner,
+    __typename: ownerType,
+  },
+  stargazers: { totalCount: stars },
+  openIssues: { totalCount: openIssues },
+  closedIssues: { totalCount: closedIssues },
+});
+
 // Test parameters.
 const data_stats = {
   data: {
@@ -25,9 +43,9 @@ const data_stats = {
       repositories: {
         totalCount: 5,
         nodes: [
-          { name: "test-repo-1", stargazers: { totalCount: 100 } },
-          { name: "test-repo-2", stargazers: { totalCount: 100 } },
-          { name: "test-repo-3", stargazers: { totalCount: 100 } },
+          createRepo("test-repo-1", 100, 30, 30),
+          createRepo("test-repo-2", 100, 40, 30),
+          createRepo("test-repo-3", 100, 35, 35),
         ],
         pageInfo: {
           hasNextPage: true,
@@ -35,6 +53,21 @@ const data_stats = {
         },
       },
     },
+    extraStatsRepo0: createRepo(
+      "WorkshopAndroidDownloader",
+      40,
+      3,
+      7,
+      "Apricityx",
+    ),
+    extraStatsRepo1: createRepo(
+      "SlayTheAmethystModded",
+      60,
+      4,
+      6,
+      "ModinMobileSTS",
+      "Organization",
+    ),
   },
 };
 
@@ -43,8 +76,8 @@ const data_repo = {
     user: {
       repositories: {
         nodes: [
-          { name: "test-repo-4", stargazers: { totalCount: 50 } },
-          { name: "test-repo-5", stargazers: { totalCount: 50 } },
+          createRepo("test-repo-4", 50, 3, 2),
+          createRepo("test-repo-5", 50, 2, 3),
         ],
         pageInfo: {
           hasNextPage: false,
@@ -60,11 +93,11 @@ const data_repo_zero_stars = {
     user: {
       repositories: {
         nodes: [
-          { name: "test-repo-1", stargazers: { totalCount: 100 } },
-          { name: "test-repo-2", stargazers: { totalCount: 100 } },
-          { name: "test-repo-3", stargazers: { totalCount: 100 } },
-          { name: "test-repo-4", stargazers: { totalCount: 0 } },
-          { name: "test-repo-5", stargazers: { totalCount: 0 } },
+          createRepo("test-repo-1", 100, 30, 30),
+          createRepo("test-repo-2", 100, 40, 30),
+          createRepo("test-repo-3", 100, 35, 35),
+          createRepo("test-repo-4", 0, 3, 2),
+          createRepo("test-repo-5", 0, 2, 3),
         ],
         pageInfo: {
           hasNextPage: true,
@@ -110,9 +143,9 @@ describe("Test fetchStats", () => {
       commits: 100,
       prs: 300,
       reviews: 50,
-      issues: 200,
+      issues: 220,
       repos: 5,
-      stars: 300,
+      stars: 400,
       followers: 100,
     });
 
@@ -120,12 +153,12 @@ describe("Test fetchStats", () => {
       contributedTo: 61,
       name: "Anurag Hazra",
       totalCommits: 100,
-      totalIssues: 200,
+      totalIssues: 220,
       totalPRs: 300,
       totalPRsMerged: 0,
       mergedPRsPercentage: 0,
       totalReviews: 50,
-      totalStars: 300,
+      totalStars: 400,
       totalDiscussionsStarted: 0,
       totalDiscussionsAnswered: 0,
       rank,
@@ -146,9 +179,9 @@ describe("Test fetchStats", () => {
       commits: 100,
       prs: 300,
       reviews: 50,
-      issues: 200,
+      issues: 220,
       repos: 5,
-      stars: 300,
+      stars: 400,
       followers: 100,
     });
 
@@ -156,12 +189,12 @@ describe("Test fetchStats", () => {
       contributedTo: 61,
       name: "Anurag Hazra",
       totalCommits: 100,
-      totalIssues: 200,
+      totalIssues: 220,
       totalPRs: 300,
       totalPRsMerged: 0,
       mergedPRsPercentage: 0,
       totalReviews: 50,
-      totalStars: 300,
+      totalStars: 400,
       totalDiscussionsStarted: 0,
       totalDiscussionsAnswered: 0,
       rank,
@@ -188,9 +221,9 @@ describe("Test fetchStats", () => {
       commits: 1000,
       prs: 300,
       reviews: 50,
-      issues: 200,
+      issues: 220,
       repos: 5,
-      stars: 300,
+      stars: 400,
       followers: 100,
     });
 
@@ -198,12 +231,12 @@ describe("Test fetchStats", () => {
       contributedTo: 61,
       name: "Anurag Hazra",
       totalCommits: 1000,
-      totalIssues: 200,
+      totalIssues: 220,
       totalPRs: 300,
       totalPRsMerged: 0,
       mergedPRsPercentage: 0,
       totalReviews: 50,
-      totalStars: 300,
+      totalStars: 400,
       totalDiscussionsStarted: 0,
       totalDiscussionsAnswered: 0,
       rank,
@@ -237,9 +270,9 @@ describe("Test fetchStats", () => {
       commits: 1000,
       prs: 300,
       reviews: 50,
-      issues: 200,
+      issues: 220,
       repos: 5,
-      stars: 200,
+      stars: 300,
       followers: 100,
     });
 
@@ -247,12 +280,12 @@ describe("Test fetchStats", () => {
       contributedTo: 61,
       name: "Anurag Hazra",
       totalCommits: 1000,
-      totalIssues: 200,
+      totalIssues: 220,
       totalPRs: 300,
       totalPRsMerged: 0,
       mergedPRsPercentage: 0,
       totalReviews: 50,
-      totalStars: 200,
+      totalStars: 300,
       totalDiscussionsStarted: 0,
       totalDiscussionsAnswered: 0,
       rank,
@@ -268,9 +301,9 @@ describe("Test fetchStats", () => {
       commits: 100,
       prs: 300,
       reviews: 50,
-      issues: 200,
-      repos: 5,
-      stars: 400,
+      issues: 230,
+      repos: 7,
+      stars: 500,
       followers: 100,
     });
 
@@ -278,12 +311,12 @@ describe("Test fetchStats", () => {
       contributedTo: 61,
       name: "Anurag Hazra",
       totalCommits: 100,
-      totalIssues: 200,
+      totalIssues: 230,
       totalPRs: 300,
       totalPRsMerged: 0,
       mergedPRsPercentage: 0,
       totalReviews: 50,
-      totalStars: 400,
+      totalStars: 500,
       totalDiscussionsStarted: 0,
       totalDiscussionsAnswered: 0,
       rank,
@@ -299,9 +332,9 @@ describe("Test fetchStats", () => {
       commits: 100,
       prs: 300,
       reviews: 50,
-      issues: 200,
+      issues: 220,
       repos: 5,
-      stars: 300,
+      stars: 400,
       followers: 100,
     });
 
@@ -309,12 +342,12 @@ describe("Test fetchStats", () => {
       contributedTo: 61,
       name: "Anurag Hazra",
       totalCommits: 100,
-      totalIssues: 200,
+      totalIssues: 220,
       totalPRs: 300,
       totalPRsMerged: 0,
       mergedPRsPercentage: 0,
       totalReviews: 50,
-      totalStars: 300,
+      totalStars: 400,
       totalDiscussionsStarted: 0,
       totalDiscussionsAnswered: 0,
       rank,
@@ -330,9 +363,9 @@ describe("Test fetchStats", () => {
       commits: 100,
       prs: 300,
       reviews: 50,
-      issues: 200,
+      issues: 220,
       repos: 5,
-      stars: 300,
+      stars: 400,
       followers: 100,
     });
 
@@ -340,12 +373,12 @@ describe("Test fetchStats", () => {
       contributedTo: 61,
       name: "Anurag Hazra",
       totalCommits: 100,
-      totalIssues: 200,
+      totalIssues: 220,
       totalPRs: 300,
       totalPRsMerged: 0,
       mergedPRsPercentage: 0,
       totalReviews: 50,
-      totalStars: 300,
+      totalStars: 400,
       totalDiscussionsStarted: 0,
       totalDiscussionsAnswered: 0,
       rank,
@@ -359,9 +392,9 @@ describe("Test fetchStats", () => {
       commits: 100,
       prs: 300,
       reviews: 50,
-      issues: 200,
+      issues: 220,
       repos: 5,
-      stars: 300,
+      stars: 400,
       followers: 100,
     });
 
@@ -369,12 +402,12 @@ describe("Test fetchStats", () => {
       contributedTo: 61,
       name: "Anurag Hazra",
       totalCommits: 100,
-      totalIssues: 200,
+      totalIssues: 220,
       totalPRs: 300,
       totalPRsMerged: 0,
       mergedPRsPercentage: 0,
       totalReviews: 50,
-      totalStars: 300,
+      totalStars: 400,
       totalDiscussionsStarted: 0,
       totalDiscussionsAnswered: 0,
       rank,
@@ -388,9 +421,9 @@ describe("Test fetchStats", () => {
       commits: 100,
       prs: 300,
       reviews: 50,
-      issues: 200,
+      issues: 220,
       repos: 5,
-      stars: 300,
+      stars: 400,
       followers: 100,
     });
 
@@ -398,12 +431,12 @@ describe("Test fetchStats", () => {
       contributedTo: 61,
       name: "Anurag Hazra",
       totalCommits: 100,
-      totalIssues: 200,
+      totalIssues: 220,
       totalPRs: 300,
       totalPRsMerged: 240,
       mergedPRsPercentage: 80,
       totalReviews: 50,
-      totalStars: 300,
+      totalStars: 400,
       totalDiscussionsStarted: 10,
       totalDiscussionsAnswered: 40,
       rank,

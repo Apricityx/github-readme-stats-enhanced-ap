@@ -15,18 +15,49 @@ import {
 dotenv.config();
 
 // GraphQL queries.
+const EXTRA_STATS_REPOSITORIES = [
+  {
+    alias: "extraStatsRepo0",
+    owner: "Apricityx",
+    name: "WorkshopAndroidDownloader",
+  },
+  {
+    alias: "extraStatsRepo1",
+    owner: "ModinMobileSTS",
+    name: "SlayTheAmethystModded",
+  },
+];
+
+const GRAPHQL_REPOSITORY_STATS_FIELD = `
+  name
+  owner {
+    login
+    __typename
+  }
+  stargazers {
+    totalCount
+  }
+  openIssues: issues(states: OPEN) {
+    totalCount
+  }
+  closedIssues: issues(states: CLOSED) {
+    totalCount
+  }
+`;
+
+const GRAPHQL_EXTRA_STATS_REPOS_FIELD = EXTRA_STATS_REPOSITORIES.map(
+  ({ alias, owner, name }) => `
+  ${alias}: repository(owner: "${owner}", name: "${name}") {
+    ${GRAPHQL_REPOSITORY_STATS_FIELD}
+  }
+`,
+).join("\n");
+
 const GRAPHQL_REPOS_FIELD = `
   repositories(first: 100, ownerAffiliations: OWNER, orderBy: {direction: DESC, field: STARGAZERS}, after: $after) {
     totalCount
     nodes {
-      name
-      owner {
-        login
-        __typename
-      }
-      stargazers {
-        totalCount
-      }
+      ${GRAPHQL_REPOSITORY_STATS_FIELD}
     }
     pageInfo {
       hasNextPage
@@ -40,15 +71,8 @@ const GRAPHQL_REPOS_FIELD_WITH_MANAGED_OWNED = `
   ownedRepos: repositories(first: 100, ownerAffiliations: OWNER, orderBy: {direction: DESC, field: STARGAZERS}, after: $after) {
     totalCount
     nodes {
-      name
-      owner {
-        login
-        __typename
-      }
+      ${GRAPHQL_REPOSITORY_STATS_FIELD}
       viewerPermission
-      stargazers {
-        totalCount
-      }
     }
     pageInfo {
       hasNextPage
@@ -61,15 +85,8 @@ const GRAPHQL_REPOS_FIELD_WITH_MANAGED_ORG = `
   orgRepos: repositories(first: 100, ownerAffiliations: ORGANIZATION_MEMBER, orderBy: {direction: DESC, field: STARGAZERS}, after: $after) {
     totalCount
     nodes {
-      name
-      owner {
-        login
-        __typename
-      }
+      ${GRAPHQL_REPOSITORY_STATS_FIELD}
       viewerPermission
-      stargazers {
-        totalCount
-      }
     }
     pageInfo {
       hasNextPage
@@ -130,6 +147,7 @@ const GRAPHQL_STATS_QUERY = `
       }
       ${GRAPHQL_REPOS_FIELD}
     }
+    ${GRAPHQL_EXTRA_STATS_REPOS_FIELD}
   }
 `;
 
@@ -169,6 +187,7 @@ const GRAPHQL_STATS_QUERY_WITH_MANAGED = `
       ${GRAPHQL_REPOS_FIELD_WITH_MANAGED_OWNED}
       ${GRAPHQL_REPOS_FIELD_WITH_MANAGED_ORG}
     }
+    ${GRAPHQL_EXTRA_STATS_REPOS_FIELD}
   }
 `;
 
@@ -186,7 +205,9 @@ const GRAPHQL_STATS_QUERY_WITH_MANAGED = `
 const fetcher = (variables, token) => {
   let query;
   if (variables.includeManagedRepos) {
-    query = variables.after ? GRAPHQL_REPOS_QUERY_WITH_MANAGED : GRAPHQL_STATS_QUERY_WITH_MANAGED;
+    query = variables.after
+      ? GRAPHQL_REPOS_QUERY_WITH_MANAGED
+      : GRAPHQL_STATS_QUERY_WITH_MANAGED;
   } else {
     query = variables.after ? GRAPHQL_REPOS_QUERY : GRAPHQL_STATS_QUERY;
   }
@@ -199,6 +220,32 @@ const fetcher = (variables, token) => {
     {
       Authorization: `bearer ${token}`,
     },
+  );
+};
+
+const normalizeRepoKey = (repo) => {
+  const owner = repo.owner && repo.owner.login ? repo.owner.login : "";
+  return `${owner}/${repo.name}`.toLowerCase();
+};
+
+const isPersonalRepo = (repo, username) => {
+  return (
+    repo.owner &&
+    repo.owner.__typename === "User" &&
+    repo.owner.login.toLowerCase() === username.toLowerCase()
+  );
+};
+
+const getExtraStatsRepos = (data) => {
+  return EXTRA_STATS_REPOSITORIES.map(({ alias }) => data[alias]).filter(
+    Boolean,
+  );
+};
+
+const getRepoIssueCount = (repo) => {
+  return (
+    (repo.openIssues ? repo.openIssues.totalCount : 0) +
+    (repo.closedIssues ? repo.closedIssues.totalCount : 0)
   );
 };
 
@@ -249,16 +296,16 @@ const statsFetcher = async ({
       repoNodes = [...ownedRepos, ...orgRepos];
 
       // Update the response structure to match expected format
-      if (!stats) {
+      if (stats) {
+        stats.data.data.user.repositories.nodes.push(...repoNodes);
+        stats.data.data.user.repositories.totalCount += repoNodes.length;
+      } else {
         stats = res;
         stats.data.data.user.repositories = {
           nodes: repoNodes,
           totalCount: ownedRepos.length + orgRepos.length,
-          pageInfo: res.data.data.user.ownedRepos.pageInfo
+          pageInfo: res.data.data.user.ownedRepos.pageInfo,
         };
-      } else {
-        stats.data.data.user.repositories.nodes.push(...repoNodes);
-        stats.data.data.user.repositories.totalCount += repoNodes.length;
       }
     } else {
       repoNodes = res.data.data.user.repositories.nodes;
@@ -273,37 +320,42 @@ const statsFetcher = async ({
     const repoNodesWithStars = repoNodes.filter(
       (node) => node.stargazers.totalCount !== 0,
     );
+    const pageInfo = includeManagedRepos
+      ? res.data.data.user.ownedRepos.pageInfo
+      : res.data.data.user.repositories.pageInfo;
     hasNextPage =
       process.env.FETCH_MULTI_PAGE_STARS === "true" &&
       repoNodes.length === repoNodesWithStars.length &&
-      res.data.data.user.repositories.pageInfo.hasNextPage;
-    endCursor = res.data.data.user.repositories.pageInfo.endCursor;
+      pageInfo.hasNextPage;
+    endCursor = pageInfo.endCursor;
   }
 
-  // Filter repositories based on management permissions
+  // Stats card totals are scoped to personal repositories plus selected projects.
   if (stats && stats.data && stats.data.data && stats.data.data.user) {
     const allRepos = stats.data.data.user.repositories.nodes;
-    let filteredRepos;
+    const filteredRepos = [];
+    const seenRepos = new Set();
 
-    if (includeManagedRepos) {
-      // Include managed organization repositories
-      filteredRepos = allRepos.filter(repo => {
-        // Include owned repositories (user repositories)
-        if (repo.owner && repo.owner.__typename === 'User') {
-          return true;
-        }
-        // Include organization repositories where user has ADMIN or MAINTAIN permissions
-        if (repo.owner && repo.owner.__typename === 'Organization') {
-          return ['ADMIN', 'MAINTAIN'].includes(repo.viewerPermission);
-        }
-        return false;
-      });
-    } else {
-      // Only include user's own repositories, exclude organization repositories
-      filteredRepos = allRepos.filter(repo => {
-        return repo.owner && repo.owner.__typename === 'User';
-      });
-    }
+    [...allRepos, ...getExtraStatsRepos(stats.data.data)].forEach((repo) => {
+      const isIncluded =
+        isPersonalRepo(repo, username) ||
+        EXTRA_STATS_REPOSITORIES.some(
+          ({ owner, name }) =>
+            repo.owner && repo.owner.login === owner && repo.name === name,
+        );
+
+      if (!isIncluded) {
+        return;
+      }
+
+      const repoKey = normalizeRepoKey(repo);
+      if (seenRepos.has(repoKey)) {
+        return;
+      }
+
+      seenRepos.add(repoKey);
+      filteredRepos.push(repo);
+    });
 
     // Update the repository nodes with filtered results
     stats.data.data.user.repositories.nodes = filteredRepos;
@@ -451,7 +503,9 @@ const fetchStats = async (
   }
   stats.totalReviews =
     user.contributionsCollection.totalPullRequestReviewContributions;
-  stats.totalIssues = user.openIssues.totalCount + user.closedIssues.totalCount;
+  stats.totalIssues = user.repositories.nodes.reduce((sum, repo) => {
+    return sum + getRepoIssueCount(repo);
+  }, 0);
   if (include_discussions) {
     stats.totalDiscussionsStarted = user.repositoryDiscussions.totalCount;
   }
@@ -464,30 +518,11 @@ const fetchStats = async (
   // Retrieve stars while filtering out repositories to be hidden.
   let repoToHide = new Set(exclude_repo);
 
-  // Calculate stars with separation between personal and organization repos
-  let personalStars = 0;
-  let orgStars = 0;
-
-  user.repositories.nodes
+  stats.totalStars = user.repositories.nodes
     .filter((data) => {
       return !repoToHide.has(data.name);
     })
-    .forEach((repo) => {
-      const stars = repo.stargazers.totalCount;
-      if (repo.owner && repo.owner.__typename === 'User') {
-        personalStars += stars;
-      } else if (repo.owner && repo.owner.__typename === 'Organization') {
-        orgStars += stars;
-      }
-    });
-
-  // Store separated stars for display
-  stats.personalStars = personalStars;
-  stats.orgStars = orgStars;
-
-  // Calculate weighted total for ranking (personal: 1.0, org: 0.8)
-  const mergedStars = personalStars + orgStars;
-  stats.totalStars = include_managed_repos ? mergedStars : personalStars;
+    .reduce((sum, repo) => sum + repo.stargazers.totalCount, 0);
 
   stats.rank = calculateRank({
     all_commits: include_all_commits,

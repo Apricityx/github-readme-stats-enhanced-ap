@@ -7,35 +7,34 @@ import { renderTopLanguages } from "../src/cards/top-languages-card.js";
 import { renderError } from "../src/common/utils.js";
 import { expect, it, describe, afterEach } from "@jest/globals";
 
+const createRepo = (name, edges) => ({
+  name,
+  owner: {
+    login: "anuraghazra",
+    __typename: "User",
+  },
+  languages: {
+    edges,
+  },
+});
+
 const data_langs = {
   data: {
     user: {
       repositories: {
         nodes: [
-          {
-            languages: {
-              edges: [{ size: 150, node: { color: "#0f0", name: "HTML" } }],
-            },
-          },
-          {
-            languages: {
-              edges: [{ size: 100, node: { color: "#0f0", name: "HTML" } }],
-            },
-          },
-          {
-            languages: {
-              edges: [
-                { size: 100, node: { color: "#0ff", name: "javascript" } },
-              ],
-            },
-          },
-          {
-            languages: {
-              edges: [
-                { size: 100, node: { color: "#0ff", name: "javascript" } },
-              ],
-            },
-          },
+          createRepo("test-repo-1", [
+            { size: 150, node: { color: "#0f0", name: "HTML" } },
+          ]),
+          createRepo("test-repo-2", [
+            { size: 100, node: { color: "#0f0", name: "HTML" } },
+          ]),
+          createRepo("test-repo-3", [
+            { size: 100, node: { color: "#0ff", name: "javascript" } },
+          ]),
+          createRepo("test-repo-4", [
+            { size: 100, node: { color: "#0ff", name: "javascript" } },
+          ]),
         ],
       },
     },

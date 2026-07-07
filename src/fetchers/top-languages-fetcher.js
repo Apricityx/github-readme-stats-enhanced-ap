@@ -21,7 +21,8 @@ import {
  * @returns {Promise<AxiosResponse>} Languages fetcher response.
  */
 const fetcher = (variables, token) => {
-  const query = variables.includeManagedRepos ? `
+  const query = variables.includeManagedRepos
+    ? `
     query userInfo($login: String!) {
       user(login: $login) {
         # fetch owner repos first
@@ -66,7 +67,8 @@ const fetcher = (variables, token) => {
         }
       }
     }
-  ` : `
+  `
+    : `
     query userInfo($login: String!) {
       user(login: $login) {
         # fetch only owner repos & not forks
@@ -130,7 +132,7 @@ const fetchTopLanguages = async (
 
   const res = await retryer(fetcher, {
     login: username,
-    includeManagedRepos: include_managed_repos
+    includeManagedRepos: include_managed_repos,
   });
 
   if (res.data.errors) {
@@ -176,21 +178,21 @@ const fetchTopLanguages = async (
   // Filter repositories based on management permissions
   if (include_managed_repos) {
     // Include managed organization repositories
-    repoNodes = repoNodes.filter(repo => {
+    repoNodes = repoNodes.filter((repo) => {
       // Include owned repositories (user repositories)
-      if (repo.owner && repo.owner.__typename === 'User') {
+      if (repo.owner && repo.owner.__typename === "User") {
         return true;
       }
       // Include organization repositories where user has management permissions
-      if (repo.owner && repo.owner.__typename === 'Organization') {
-        return ['ADMIN', 'MAINTAIN'].includes(repo.viewerPermission);
+      if (repo.owner && repo.owner.__typename === "Organization") {
+        return ["ADMIN", "MAINTAIN"].includes(repo.viewerPermission);
       }
       return false;
     });
   } else {
     // Only include user's own repositories, exclude organization repositories
-    repoNodes = repoNodes.filter(repo => {
-      return repo.owner && repo.owner.__typename === 'User';
+    repoNodes = repoNodes.filter((repo) => {
+      return repo.owner && repo.owner.__typename === "User";
     });
   }
 

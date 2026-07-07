@@ -203,8 +203,6 @@ const renderStatsCard = (stats, options = {}) => {
   const {
     name,
     totalStars,
-    personalStars,
-    orgStars,
     totalCommits,
     totalIssues,
     totalPRs,
@@ -240,7 +238,6 @@ const renderStatsCard = (stats, options = {}) => {
     disable_animations = false,
     rank_icon = "default",
     show = [],
-    include_managed_repos = false,
   } = options;
 
   const lheight = parseInt(String(line_height), 10);
@@ -268,17 +265,11 @@ const renderStatsCard = (stats, options = {}) => {
   // Meta data for creating text nodes with createTextNode function
   const STATS = {};
 
-  // Handle separated stars display
-  const mergedStars =
-  include_managed_repos && personalStars !== undefined && orgStars !== undefined
-    ? personalStars + orgStars
-    : (personalStars !== undefined ? personalStars : totalStars);
-
-  STATS.personalStars = {
+  STATS.stars = {
     icon: icons.star,
-    label: include_managed_repos ? "Personal Stars Earned" : i18n.t("statcard.totalstars"),
-    value: mergedStars,
-    id: "personalStars",
+    label: i18n.t("statcard.totalstars"),
+    value: totalStars,
+    id: "stars",
   };
   STATS.commits = {
     icon: icons.commits,

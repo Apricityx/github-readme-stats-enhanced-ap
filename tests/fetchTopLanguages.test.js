@@ -6,6 +6,17 @@ import { expect, it, describe, afterEach } from "@jest/globals";
 
 const mock = new MockAdapter(axios);
 
+const createRepo = (name, edges) => ({
+  name,
+  owner: {
+    login: "anuraghazra",
+    __typename: "User",
+  },
+  languages: {
+    edges,
+  },
+});
+
 afterEach(() => {
   mock.reset();
 });
@@ -15,34 +26,18 @@ const data_langs = {
     user: {
       repositories: {
         nodes: [
-          {
-            name: "test-repo-1",
-            languages: {
-              edges: [{ size: 100, node: { color: "#0f0", name: "HTML" } }],
-            },
-          },
-          {
-            name: "test-repo-2",
-            languages: {
-              edges: [{ size: 100, node: { color: "#0f0", name: "HTML" } }],
-            },
-          },
-          {
-            name: "test-repo-3",
-            languages: {
-              edges: [
-                { size: 100, node: { color: "#0ff", name: "javascript" } },
-              ],
-            },
-          },
-          {
-            name: "test-repo-4",
-            languages: {
-              edges: [
-                { size: 100, node: { color: "#0ff", name: "javascript" } },
-              ],
-            },
-          },
+          createRepo("test-repo-1", [
+            { size: 100, node: { color: "#0f0", name: "HTML" } },
+          ]),
+          createRepo("test-repo-2", [
+            { size: 100, node: { color: "#0f0", name: "HTML" } },
+          ]),
+          createRepo("test-repo-3", [
+            { size: 100, node: { color: "#0ff", name: "javascript" } },
+          ]),
+          createRepo("test-repo-4", [
+            { size: 100, node: { color: "#0ff", name: "javascript" } },
+          ]),
         ],
       },
     },

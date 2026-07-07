@@ -53,7 +53,18 @@ const data_stats = {
       },
       repositories: {
         totalCount: 1,
-        nodes: [{ stargazers: { totalCount: 100 } }],
+        nodes: [
+          {
+            name: "test-repo",
+            owner: {
+              login: "anuraghazra",
+              __typename: "User",
+            },
+            stargazers: { totalCount: stats.totalStars },
+            openIssues: { totalCount: stats.totalIssues },
+            closedIssues: { totalCount: 0 },
+          },
+        ],
         pageInfo: {
           hasNextPage: false,
           endCursor: "cursor",
